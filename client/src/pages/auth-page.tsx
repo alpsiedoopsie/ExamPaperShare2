@@ -36,19 +36,6 @@ export default function AuthPage() {
   const { loginMutation, registerMutation, user } = useAuth();
   const [, navigate] = useLocation();
   
-  // Use useEffect for navigation to avoid hook ordering issues
-  useEffect(() => {
-    // Redirect to dashboard if user is already logged in
-    if (user) {
-      navigate("/");
-    }
-  }, [user, navigate]);
-  
-  // Don't return early to avoid React hooks issues
-  if (user) {
-    return <div className="min-h-screen flex items-center justify-center"><Loader2 className="h-8 w-8 animate-spin" /></div>;
-  }
-  
   const loginForm = useForm<LoginFormValues>({
     resolver: zodResolver(loginSchema),
     defaultValues: {
@@ -67,6 +54,19 @@ export default function AuthPage() {
       role: UserRole.STUDENT,
     },
   });
+  
+  // Use useEffect for navigation to avoid hook ordering issues
+  useEffect(() => {
+    // Redirect to dashboard if user is already logged in
+    if (user) {
+      navigate("/");
+    }
+  }, [user, navigate]);
+  
+  // Don't return early to avoid React hooks issues
+  if (user) {
+    return <div className="min-h-screen flex items-center justify-center"><Loader2 className="h-8 w-8 animate-spin" /></div>;
+  }
 
   const onLoginSubmit = (data: LoginFormValues) => {
     loginMutation.mutate(data);
