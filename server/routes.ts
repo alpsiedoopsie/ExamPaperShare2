@@ -217,21 +217,18 @@ export async function registerRoutes(app: Express): Promise<Server> {
     checkRole(UserRole.STUDENT),
     async (req: Request, res: Response) => {
       try {
-        const { data, error } = validateRequest(insertAnswerSubmissionSchema, req.body);
-        
-        if (error) {
-          return res.status(400).json({ message: "Invalid input", error });
-        }
-        
         // Check if the question paper exists
-        const paper = await storage.getQuestionPaper(data.questionPaperId);
+        const paper = await storage.getQuestionPaper(req.body.questionPaperId);
         if (!paper) {
           return res.status(404).json({ message: "Question paper not found" });
         }
         
         const submission = await storage.createAnswerSubmission({
-          ...data,
-          studentId: req.user!.id
+          questionPaperId: req.body.questionPaperId,
+          answerFile: req.body.answerFile,
+          studentId: req.user!.id,
+          status: 'pending',
+          submittedAt: new Date()
         });
         
         res.status(201).json(submission);
