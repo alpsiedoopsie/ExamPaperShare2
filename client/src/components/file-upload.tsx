@@ -4,6 +4,7 @@ import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
 import { UploadCloud, FileText, X, Loader2 } from 'lucide-react';
 import { Alert, AlertDescription } from '@/components/ui/alert';
+import { useToast } from '@/hooks/use-toast';
 
 interface FileUploadProps {
   onFileSelect: (file: File, base64Content: string) => void;
@@ -18,15 +19,17 @@ interface FileUploadProps {
 export default function FileUpload({
   onFileSelect,
   acceptedFileTypes = "application/pdf",
-  maxSizeMB = 10,
+  maxSizeMB = 50, // Increase default max size to 50MB
   isUploading = false,
   error,
   label = "Upload File",
-  description = "PDF up to 10MB"
+  description = "PDF up to 50MB"
 }: FileUploadProps) {
+  const { toast } = useToast();
   const [file, setFile] = useState<File | null>(null);
   const [dragActive, setDragActive] = useState<boolean>(false);
   const [uploadError, setUploadError] = useState<string | null>(null);
+  const [isProcessing, setIsProcessing] = useState<boolean>(false);
   
   const handleDrag = (e: React.DragEvent<HTMLDivElement>) => {
     e.preventDefault();
@@ -59,17 +62,41 @@ export default function FileUpload({
   const handleFile = (file: File) => {
     if (validateFile(file)) {
       setFile(file);
+      setIsProcessing(true);
       
-      // Convert file to base64
+      // Show processing toast for large files
+      if (file.size > 5 * 1024 * 1024) { // If larger than 5MB
+        toast({
+          title: "Processing file",
+          description: "Large file detected. Please wait while we process it.",
+          duration: 3000,
+        });
+      }
+      
+      // Convert file to base64 using a more reliable method with error handling
       const reader = new FileReader();
-      reader.readAsDataURL(file);
+      
       reader.onload = () => {
-        const base64Content = reader.result as string;
-        onFileSelect(file, base64Content);
+        try {
+          const base64Content = reader.result as string;
+          onFileSelect(file, base64Content);
+          setIsProcessing(false);
+        } catch (error) {
+          console.error("Error processing file:", error);
+          setUploadError('Error processing file. Please try a smaller file.');
+          setFile(null);
+          setIsProcessing(false);
+        }
       };
+      
       reader.onerror = () => {
-        setUploadError('Error reading file');
+        setUploadError('Error reading file. Please try again or use a different file.');
+        setFile(null);
+        setIsProcessing(false);
       };
+      
+      // Start reading the file as data URL (base64)
+      reader.readAsDataURL(file);
     }
   };
   
@@ -105,8 +132,13 @@ export default function FileUpload({
           <FileText className="h-6 w-6 text-primary mr-2" />
           <span className="text-sm text-gray-700 flex-1 truncate">{file.name}</span>
           
-          {isUploading ? (
-            <Loader2 className="h-5 w-5 animate-spin text-primary" />
+          {isUploading || isProcessing ? (
+            <div className="flex items-center">
+              <span className="text-xs text-gray-500 mr-2">
+                {isProcessing ? 'Processing...' : 'Uploading...'}
+              </span>
+              <Loader2 className="h-5 w-5 animate-spin text-primary" />
+            </div>
           ) : (
             <Button
               type="button"
@@ -144,7 +176,7 @@ export default function FileUpload({
                   accept={acceptedFileTypes}
                   className="sr-only"
                   onChange={handleChange}
-                  disabled={isUploading}
+                  disabled={isUploading || isProcessing}
                 />
               </label>
               <p className="pl-1">or drag and drop</p>
