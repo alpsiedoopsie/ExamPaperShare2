@@ -27,11 +27,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
       if (!req.isAuthenticated()) {
         return res.status(401).json({ message: "You must be logged in" });
       }
-      
+
       if (!roles.includes(req.user!.role as UserRole)) {
         return res.status(403).json({ message: "You don't have permission to access this resource" });
       }
-      
+
       next();
     };
   };
@@ -43,7 +43,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     if (!req.isAuthenticated()) {
       return res.status(401).json({ message: "You must be logged in" });
     }
-    
+
     try {
       const papers = await storage.getQuestionPapers();
       res.json(papers);
@@ -57,15 +57,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
     if (!req.isAuthenticated()) {
       return res.status(401).json({ message: "You must be logged in" });
     }
-    
+
     try {
       const paperId = parseInt(req.params.id);
       const paper = await storage.getQuestionPaper(paperId);
-      
+
       if (!paper) {
         return res.status(404).json({ message: "Question paper not found" });
       }
-      
+
       res.json(paper);
     } catch (error) {
       res.status(500).json({ message: "Failed to fetch question paper", error });
@@ -88,9 +88,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
           uploadedById: req.user!.id,
           status: 'published'
         };
-        
+
         const paper = await storage.createQuestionPaper(paperData);
-        
+
         res.status(201).json(paper);
       } catch (error) {
         res.status(500).json({ message: "Failed to create question paper", error });
@@ -106,17 +106,17 @@ export async function registerRoutes(app: Express): Promise<Server> {
       try {
         const paperId = parseInt(req.params.id);
         const paper = await storage.getQuestionPaper(paperId);
-        
+
         if (!paper) {
           return res.status(404).json({ message: "Question paper not found" });
         }
-        
+
         const { data, error } = validateRequest(insertQuestionPaperSchema.partial(), req.body);
-        
+
         if (error) {
           return res.status(400).json({ message: "Invalid input", error });
         }
-        
+
         const updatedPaper = await storage.updateQuestionPaper(paperId, data);
         res.json(updatedPaper);
       } catch (error) {
@@ -133,11 +133,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
       try {
         const paperId = parseInt(req.params.id);
         const paper = await storage.getQuestionPaper(paperId);
-        
+
         if (!paper) {
           return res.status(404).json({ message: "Question paper not found" });
         }
-        
+
         await storage.deleteQuestionPaper(paperId);
         res.status(204).send();
       } catch (error) {
@@ -170,11 +170,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
       try {
         const paperId = parseInt(req.params.id);
         const paper = await storage.getQuestionPaper(paperId);
-        
+
         if (!paper) {
           return res.status(404).json({ message: "Question paper not found" });
         }
-        
+
         const submissions = await storage.getAnswerSubmissions(paperId);
         res.json(submissions);
       } catch (error) {
@@ -202,23 +202,23 @@ export async function registerRoutes(app: Express): Promise<Server> {
     if (!req.isAuthenticated()) {
       return res.status(401).json({ message: "You must be logged in" });
     }
-    
+
     try {
       const submissionId = parseInt(req.params.id);
       const submission = await storage.getAnswerSubmission(submissionId);
-      
+
       if (!submission) {
         return res.status(404).json({ message: "Submission not found" });
       }
-      
+
       // Check if the user has access to this submission
       const userRole = req.user!.role as UserRole;
       const userId = req.user!.id;
-      
+
       if (userRole === UserRole.STUDENT && submission.studentId !== userId) {
         return res.status(403).json({ message: "You don't have permission to access this submission" });
       }
-      
+
       res.json(submission);
     } catch (error) {
       res.status(500).json({ message: "Failed to fetch submission", error });
@@ -236,7 +236,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         if (!paper) {
           return res.status(404).json({ message: "Question paper not found" });
         }
-        
+
         const submission = await storage.createAnswerSubmission({
           questionPaperId: parseInt(req.body.questionPaperId),
           fileName: req.body.fileName,
@@ -244,7 +244,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
           studentId: req.user!.id,
           status: 'submitted'
         });
-        
+
         res.status(201).json(submission);
       } catch (error) {
         res.status(500).json({ message: "Failed to create submission", error });
@@ -259,23 +259,23 @@ export async function registerRoutes(app: Express): Promise<Server> {
     if (!req.isAuthenticated()) {
       return res.status(401).json({ message: "You must be logged in" });
     }
-    
+
     try {
       const submissionId = parseInt(req.params.id);
       const submission = await storage.getAnswerSubmission(submissionId);
-      
+
       if (!submission) {
         return res.status(404).json({ message: "Submission not found" });
       }
-      
+
       // Check if the user has access to these comments
       const userRole = req.user!.role as UserRole;
       const userId = req.user!.id;
-      
+
       if (userRole === UserRole.STUDENT && submission.studentId !== userId) {
         return res.status(403).json({ message: "You don't have permission to access these comments" });
       }
-      
+
       const comments = await storage.getComments(submissionId);
       res.json(comments);
     } catch (error) {
@@ -291,30 +291,30 @@ export async function registerRoutes(app: Express): Promise<Server> {
       try {
         const submissionId = parseInt(req.params.id);
         const submission = await storage.getAnswerSubmission(submissionId);
-        
+
         if (!submission) {
           return res.status(404).json({ message: "Submission not found" });
         }
-        
+
         const { data, error } = validateRequest(insertCommentSchema.pick({ content: true }), req.body);
-        
+
         if (error) {
           return res.status(400).json({ message: "Invalid input", error });
         }
-        
+
         const comment = await storage.createComment({
           submissionId,
           assessorId: req.user!.id,
           content: data.content
         });
-        
+
         // Create a notification for the student
         await storage.createNotification({
           userId: submission.studentId,
           title: "New Comment on Your Submission",
           message: `An assessor has commented on your submission.`
         });
-        
+
         res.status(201).json(comment);
       } catch (error) {
         res.status(500).json({ message: "Failed to create comment", error });
@@ -324,12 +324,22 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   // === Notification Routes ===
 
+  // Get all users (admin only)
+  app.get("/api/users", checkRole(UserRole.ADMIN), async (req: Request, res: Response) => {
+    try {
+      const users = await storage.getUsers();
+      res.json(users);
+    } catch (error) {
+      res.status(500).json({ message: "Failed to fetch users", error });
+    }
+  });
+
   // Get all notifications for the current user
   app.get("/api/notifications", async (req: Request, res: Response) => {
     if (!req.isAuthenticated()) {
       return res.status(401).json({ message: "You must be logged in" });
     }
-    
+
     try {
       const notifications = await storage.getNotifications(req.user!.id);
       res.json(notifications);
@@ -343,15 +353,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
     if (!req.isAuthenticated()) {
       return res.status(401).json({ message: "You must be logged in" });
     }
-    
+
     try {
       const notificationId = parseInt(req.params.id);
       const success = await storage.markNotificationAsRead(notificationId);
-      
+
       if (!success) {
         return res.status(404).json({ message: "Notification not found" });
       }
-      
+
       res.status(204).send();
     } catch (error) {
       res.status(500).json({ message: "Failed to update notification", error });

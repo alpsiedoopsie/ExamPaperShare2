@@ -193,4 +193,16 @@ export class DatabaseStorage implements IStorage {
   }
 }
 
+class DatabaseStorage {
+  private users = [
+    { id: 1, username: "admin", email: "admin@example.com", role: "admin", status: "active" },
+    { id: 2, username: "student", email: "student@example.com", role: "student", status: "active" },
+    { id: 3, username: "assessor", email: "assessor@example.com", role: "assessor", status: "active" }
+  ];
+
+  async getUsers() {
+    return this.users;
+  }
+}
+
 export const storage = new DatabaseStorage();

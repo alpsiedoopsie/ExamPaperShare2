@@ -55,6 +55,27 @@ export default function AdminView({ user }: AdminViewProps) {
   // Fetch users (in a real app this would be a separate endpoint)
   const { data: users, isLoading: usersLoading } = useQuery({
     queryKey: ['/api/users'],
+    select: (data) => {
+      let filtered = [...data];
+      
+      if (userRoleFilter && userRoleFilter !== 'all-roles') {
+        filtered = filtered.filter(user => user.role === userRoleFilter);
+      }
+      
+      if (userStatusFilter && userStatusFilter !== 'all-statuses') {
+        filtered = filtered.filter(user => user.status === userStatusFilter);
+      }
+      
+      if (userSearchQuery) {
+        const query = userSearchQuery.toLowerCase();
+        filtered = filtered.filter(user => 
+          user.username.toLowerCase().includes(query) ||
+          user.email?.toLowerCase().includes(query)
+        );
+      }
+      
+      return filtered;
+    },
   });
 
   // Create question paper mutation
