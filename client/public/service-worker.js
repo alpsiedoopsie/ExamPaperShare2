@@ -205,15 +205,178 @@ self.addEventListener('sync', (event) => {
 });
 
 // Function to sync pending submissions
-// This would use IndexedDB in a real implementation
 async function syncPendingSubmissions() {
-  // Implementation would use IndexedDB to store and retrieve submissions
   console.log('Syncing pending submissions');
   
-  // Example implementation might look like:
-  // 1. Open IndexedDB
-  // 2. Get all pending submissions
-  // 3. For each submission, try to send to server
-  // 4. If successful, remove from pending
-  // 5. If failed, keep in pending for next sync
+  try {
+    // Open database
+    const db = await openDatabase();
+    const pendingSubmissions = await getPendingSubmissions(db);
+    
+    console.log(`Found ${pendingSubmissions.length} pending submissions to sync`);
+    
+    // Try to submit each pending submission
+    for (const submission of pendingSubmissions) {
+      try {
+        // Attempt to send to the server
+        const response = await fetch('/api/answer-submissions', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify(submission.data)
+        });
+        
+        if (response.ok) {
+          // If successful, remove from pending
+          await removeSubmission(db, submission.id);
+          console.log(`Successfully synced submission ${submission.id}`);
+          
+          // Notify the user
+          self.registration.showNotification('Submission Synced', {
+            body: 'Your answer submission has been successfully uploaded.',
+            icon: '/icons/icon-192x192.png'
+          });
+        } else {
+          console.log(`Failed to sync submission ${submission.id}: ${response.statusText}`);
+        }
+      } catch (error) {
+        console.error(`Error syncing submission ${submission.id}:`, error);
+      }
+    }
+  } catch (error) {
+    console.error('Error in syncPendingSubmissions:', error);
+  }
+}
+
+// Open the IndexedDB database
+function openDatabase() {
+  return new Promise((resolve, reject) => {
+    const request = indexedDB.open('ExamShareOfflineDB', 1);
+    
+    request.onerror = (event) => {
+      reject('Error opening IndexedDB');
+    };
+    
+    request.onsuccess = (event) => {
+      resolve(event.target.result);
+    };
+    
+    request.onupgradeneeded = (event) => {
+      const db = event.target.result;
+      
+      // Create object stores for different data types
+      if (!db.objectStoreNames.contains('pendingSubmissions')) {
+        db.createObjectStore('pendingSubmissions', { keyPath: 'id', autoIncrement: true });
+      }
+      
+      if (!db.objectStoreNames.contains('cachedQuestionPapers')) {
+        db.createObjectStore('cachedQuestionPapers', { keyPath: 'id' });
+      }
+      
+      if (!db.objectStoreNames.contains('cachedSubmissions')) {
+        db.createObjectStore('cachedSubmissions', { keyPath: 'id' });
+      }
+    };
+  });
+}
+
+// Get all pending submissions from IndexedDB
+function getPendingSubmissions(db) {
+  return new Promise((resolve, reject) => {
+    const transaction = db.transaction(['pendingSubmissions'], 'readonly');
+    const store = transaction.objectStore('pendingSubmissions');
+    const request = store.getAll();
+    
+    request.onerror = (event) => {
+      reject('Error getting pending submissions from IndexedDB');
+    };
+    
+    request.onsuccess = (event) => {
+      resolve(event.target.result);
+    };
+  });
+}
+
+// Remove a submission from IndexedDB
+function removeSubmission(db, id) {
+  return new Promise((resolve, reject) => {
+    const transaction = db.transaction(['pendingSubmissions'], 'readwrite');
+    const store = transaction.objectStore('pendingSubmissions');
+    const request = store.delete(id);
+    
+    request.onerror = (event) => {
+      reject('Error removing submission from IndexedDB');
+    };
+    
+    request.onsuccess = (event) => {
+      resolve();
+    };
+  });
+}
+
+// Store a submission in IndexedDB for later syncing
+function storeSubmission(data) {
+  return new Promise(async (resolve, reject) => {
+    try {
+      const db = await openDatabase();
+      const transaction = db.transaction(['pendingSubmissions'], 'readwrite');
+      const store = transaction.objectStore('pendingSubmissions');
+      const request = store.add({ data, timestamp: new Date().toISOString() });
+      
+      request.onerror = (event) => {
+        reject('Error storing submission in IndexedDB');
+      };
+      
+      request.onsuccess = (event) => {
+        resolve(event.target.result);
+      };
+    } catch (error) {
+      reject(error);
+    }
+  });
+}
+
+// Store a question paper for offline access
+function cacheQuestionPaper(paper) {
+  return new Promise(async (resolve, reject) => {
+    try {
+      const db = await openDatabase();
+      const transaction = db.transaction(['cachedQuestionPapers'], 'readwrite');
+      const store = transaction.objectStore('cachedQuestionPapers');
+      const request = store.put(paper);
+      
+      request.onerror = (event) => {
+        reject('Error caching question paper');
+      };
+      
+      request.onsuccess = (event) => {
+        resolve();
+      };
+    } catch (error) {
+      reject(error);
+    }
+  });
+}
+
+// Get a cached question paper
+function getCachedQuestionPaper(id) {
+  return new Promise(async (resolve, reject) => {
+    try {
+      const db = await openDatabase();
+      const transaction = db.transaction(['cachedQuestionPapers'], 'readonly');
+      const store = transaction.objectStore('cachedQuestionPapers');
+      const request = store.get(id);
+      
+      request.onerror = (event) => {
+        reject('Error getting cached question paper');
+      };
+      
+      request.onsuccess = (event) => {
+        resolve(event.target.result);
+      };
+    } catch (error) {
+      reject(error);
+    }
+  });
 }

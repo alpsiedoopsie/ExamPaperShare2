@@ -69,7 +69,12 @@ export const registerBackgroundSync = (tag: string): Promise<void> => {
   if ('serviceWorker' in navigator && 'SyncManager' in window) {
     return navigator.serviceWorker.ready
       .then(registration => {
-        return registration.sync.register(tag);
+        // Type assertion to handle sync property that might not be recognized by TypeScript
+        const syncManager = (registration as any).sync;
+        if (syncManager) {
+          return syncManager.register(tag);
+        }
+        return Promise.resolve();
       })
       .then(() => {
         console.log('Background sync registered:', tag);
@@ -88,22 +93,132 @@ export const isOnline = (): boolean => {
 
 // Store data in IndexedDB for offline use
 export const storeForOffline = async (storeName: string, data: any): Promise<void> => {
-  // This would be implemented with IndexedDB in a real application
   console.log(`Storing data in ${storeName} for offline use:`, data);
-  
-  // For the purpose of this example, we'll just use localStorage
-  try {
-    const existingData = localStorage.getItem(storeName);
-    const items = existingData ? JSON.parse(existingData) : [];
-    items.push({
-      ...data,
-      id: Date.now(), // Use timestamp as temp ID
-      pendingSync: true
-    });
-    localStorage.setItem(storeName, JSON.stringify(items));
-  } catch (err) {
-    console.error('Failed to store data for offline use:', err);
-  }
+
+  return new Promise((resolve, reject) => {
+    // Open (or create) the database
+    const request = indexedDB.open('ExamShareOfflineDB', 1);
+    
+    request.onerror = (event) => {
+      console.error('IndexedDB error:', event);
+      reject('Error opening database');
+    };
+    
+    request.onupgradeneeded = (event) => {
+      const db = (event.target as IDBOpenDBRequest).result;
+      
+      // Create object stores for different data types if they don't exist
+      if (!db.objectStoreNames.contains('pendingSubmissions')) {
+        db.createObjectStore('pendingSubmissions', { keyPath: 'id', autoIncrement: true });
+      }
+      
+      if (!db.objectStoreNames.contains('cachedQuestionPapers')) {
+        db.createObjectStore('cachedQuestionPapers', { keyPath: 'id' });
+      }
+      
+      if (!db.objectStoreNames.contains('cachedSubmissions')) {
+        db.createObjectStore('cachedSubmissions', { keyPath: 'id' });
+      }
+    };
+    
+    request.onsuccess = (event) => {
+      try {
+        const db = (event.target as IDBOpenDBRequest).result;
+        
+        // Use a transaction for the specified store
+        const transaction = db.transaction([storeName], 'readwrite');
+        const store = transaction.objectStore(storeName);
+        
+        // Add the data to the object store
+        const record = {
+          ...data,
+          timestamp: new Date().toISOString(),
+          pendingSync: true
+        };
+        
+        // If the data already has an id property, use it, otherwise let autoIncrement handle it
+        const addRequest = data.id ? store.put(record) : store.add(record);
+        
+        addRequest.onsuccess = () => {
+          console.log(`Successfully stored data in ${storeName}`);
+          
+          // Register for background sync if the browser supports it
+          if ('serviceWorker' in navigator && 'SyncManager' in window) {
+            navigator.serviceWorker.ready
+              .then(registration => {
+                // Type assertion to handle sync property that might not be recognized by TypeScript
+                const syncManager = (registration as any).sync;
+                if (syncManager) {
+                  return syncManager.register('submit-answer');
+                }
+                return Promise.resolve();
+              })
+              .catch(err => {
+                console.error('Background sync registration failed:', err);
+              });
+          }
+          
+          resolve();
+        };
+        
+        addRequest.onerror = (event) => {
+          console.error('Error storing data:', event);
+          reject('Error storing data');
+        };
+        
+        transaction.oncomplete = () => {
+          db.close();
+        };
+      } catch (error) {
+        console.error('Error in IndexedDB transaction:', error);
+        reject(error);
+      }
+    };
+  });
+};
+
+// Get offline stored data
+export const getOfflineData = async (storeName: string): Promise<any[]> => {
+  return new Promise((resolve, reject) => {
+    const request = indexedDB.open('ExamShareOfflineDB', 1);
+    
+    request.onerror = (event) => {
+      console.error('IndexedDB error:', event);
+      reject('Error opening database');
+    };
+    
+    request.onsuccess = (event) => {
+      try {
+        const db = (event.target as IDBOpenDBRequest).result;
+        
+        // Check if the store exists
+        if (!db.objectStoreNames.contains(storeName)) {
+          resolve([]);
+          return;
+        }
+        
+        const transaction = db.transaction([storeName], 'readonly');
+        const store = transaction.objectStore(storeName);
+        const getAllRequest = store.getAll();
+        
+        getAllRequest.onsuccess = () => {
+          resolve(getAllRequest.result);
+        };
+        
+        getAllRequest.onerror = (event) => {
+          console.error('Error retrieving data:', event);
+          reject('Error retrieving data');
+        };
+        
+        transaction.oncomplete = () => {
+          db.close();
+        };
+      } catch (error) {
+        console.error('Error in IndexedDB transaction:', error);
+        reject(error);
+      }
+    };
+  });
 };
 
 // Detect file type from base64 string
