@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -36,10 +36,17 @@ export default function AuthPage() {
   const { loginMutation, registerMutation, user } = useAuth();
   const [, navigate] = useLocation();
   
-  // Redirect to dashboard if user is already logged in
+  // Use useEffect for navigation to avoid hook ordering issues
+  useEffect(() => {
+    // Redirect to dashboard if user is already logged in
+    if (user) {
+      navigate("/");
+    }
+  }, [user, navigate]);
+  
+  // Don't return early to avoid React hooks issues
   if (user) {
-    navigate("/");
-    return null;
+    return <div className="min-h-screen flex items-center justify-center"><Loader2 className="h-8 w-8 animate-spin" /></div>;
   }
   
   const loginForm = useForm<LoginFormValues>({
