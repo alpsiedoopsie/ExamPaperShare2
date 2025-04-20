@@ -78,16 +78,18 @@ export async function registerRoutes(app: Express): Promise<Server> {
     checkRole(UserRole.ADMIN),
     async (req: Request, res: Response) => {
       try {
-        const { data, error } = validateRequest(insertQuestionPaperSchema, req.body);
+        const { data, error } = validateRequest(createInsertSchema(questionPapers), {
+          ...req.body,
+          uploadedById: req.user!.id,
+          status: 'published',
+          createdAt: new Date()
+        });
         
         if (error) {
           return res.status(400).json({ message: "Invalid input", error });
         }
         
-        const paper = await storage.createQuestionPaper({
-          ...data,
-          uploadedById: req.user!.id
-        });
+        const paper = await storage.createQuestionPaper(data);
         
         res.status(201).json(paper);
       } catch (error) {
