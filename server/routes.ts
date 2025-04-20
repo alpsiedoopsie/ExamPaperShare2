@@ -148,6 +148,20 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   // === Answer Submission Routes ===
 
+  // Get all submissions to assess (admin, assessor)
+  app.get(
+    "/api/submissions-to-assess",
+    checkRole(UserRole.ADMIN, UserRole.ASSESSOR),
+    async (req: Request, res: Response) => {
+      try {
+        const submissions = await storage.getAnswerSubmissions();
+        res.json(submissions);
+      } catch (error) {
+        res.status(500).json({ message: "Failed to fetch submissions", error });
+      }
+    }
+  );
+
   // Get all answer submissions for a question paper (admin, assessor)
   app.get(
     "/api/question-papers/:id/submissions", 
