@@ -1,6 +1,7 @@
 import { pgTable, text, serial, integer, boolean, timestamp, primaryKey } from "drizzle-orm/pg-core";
 import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod";
+import { relations } from "drizzle-orm";
 
 // Enum for user roles
 export enum UserRole {
@@ -99,6 +100,52 @@ export const insertNotificationSchema = createInsertSchema(notifications).pick({
   title: true,
   message: true
 });
+
+// Define relations
+export const usersRelations = relations(users, ({ many }) => ({
+  questionPapers: many(questionPapers),
+  answerSubmissions: many(answerSubmissions),
+  comments: many(comments),
+  notifications: many(notifications)
+}));
+
+export const questionPapersRelations = relations(questionPapers, ({ one, many }) => ({
+  uploadedBy: one(users, {
+    fields: [questionPapers.uploadedById],
+    references: [users.id]
+  }),
+  answerSubmissions: many(answerSubmissions)
+}));
+
+export const answerSubmissionsRelations = relations(answerSubmissions, ({ one, many }) => ({
+  questionPaper: one(questionPapers, {
+    fields: [answerSubmissions.questionPaperId],
+    references: [questionPapers.id]
+  }),
+  student: one(users, {
+    fields: [answerSubmissions.studentId],
+    references: [users.id]
+  }),
+  comments: many(comments)
+}));
+
+export const commentsRelations = relations(comments, ({ one }) => ({
+  submission: one(answerSubmissions, {
+    fields: [comments.submissionId],
+    references: [answerSubmissions.id]
+  }),
+  assessor: one(users, {
+    fields: [comments.assessorId],
+    references: [users.id]
+  })
+}));
+
+export const notificationsRelations = relations(notifications, ({ one }) => ({
+  user: one(users, {
+    fields: [notifications.userId],
+    references: [users.id]
+  })
+}));
 
 // Export types
 export type InsertUser = z.infer<typeof insertUserSchema>;

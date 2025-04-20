@@ -5,10 +5,13 @@ import {
   comments, type Comment, type InsertComment,
   notifications, type Notification, type InsertNotification
 } from "@shared/schema";
-import createMemoryStore from "memorystore";
 import session from "express-session";
+import { db } from "./db";
+import { eq, and, desc } from "drizzle-orm";
+import connectPg from "connect-pg-simple";
+import { pool } from "./db";
 
-const MemoryStore = createMemoryStore(session);
+const PostgresSessionStore = connectPg(session);
 
 // Interface for storage operations
 export interface IStorage {
@@ -44,176 +47,150 @@ export interface IStorage {
   sessionStore: session.SessionStore;
 }
 
-export class MemStorage implements IStorage {
-  private users: Map<number, User>;
-  private questionPapers: Map<number, QuestionPaper>;
-  private answerSubmissions: Map<number, AnswerSubmission>;
-  private comments: Map<number, Comment>;
-  private notifications: Map<number, Notification>;
-  
-  currentUserId: number;
-  currentPaperId: number;
-  currentSubmissionId: number;
-  currentCommentId: number;
-  currentNotificationId: number;
+export class DatabaseStorage implements IStorage {
   sessionStore: session.SessionStore;
 
   constructor() {
-    this.users = new Map();
-    this.questionPapers = new Map();
-    this.answerSubmissions = new Map();
-    this.comments = new Map();
-    this.notifications = new Map();
-    
-    this.currentUserId = 1;
-    this.currentPaperId = 1;
-    this.currentSubmissionId = 1;
-    this.currentCommentId = 1;
-    this.currentNotificationId = 1;
-    
-    this.sessionStore = new MemoryStore({
-      checkPeriod: 86400000, // prune expired entries every 24h
+    this.sessionStore = new PostgresSessionStore({ 
+      pool, 
+      createTableIfMissing: true 
     });
   }
-
+  
   // User methods
   async getUser(id: number): Promise<User | undefined> {
-    return this.users.get(id);
-  }
-
-  async getUserByUsername(username: string): Promise<User | undefined> {
-    return Array.from(this.users.values()).find(
-      (user) => user.username === username,
-    );
-  }
-
-  async createUser(insertUser: InsertUser): Promise<User> {
-    const id = this.currentUserId++;
-    const user: User = { ...insertUser, id };
-    this.users.set(id, user);
+    const [user] = await db.select().from(users).where(eq(users.id, id));
     return user;
   }
-
+  
+  async getUserByUsername(username: string): Promise<User | undefined> {
+    const [user] = await db.select().from(users).where(eq(users.username, username));
+    return user;
+  }
+  
+  async createUser(insertUser: InsertUser): Promise<User> {
+    const [user] = await db.insert(users).values(insertUser).returning();
+    return user;
+  }
+  
   // Question paper methods
   async getQuestionPapers(): Promise<QuestionPaper[]> {
-    return Array.from(this.questionPapers.values());
+    return await db.select().from(questionPapers).orderBy(desc(questionPapers.createdAt));
   }
-
+  
   async getQuestionPaper(id: number): Promise<QuestionPaper | undefined> {
-    return this.questionPapers.get(id);
+    const [paper] = await db.select().from(questionPapers).where(eq(questionPapers.id, id));
+    return paper;
   }
-
+  
   async createQuestionPaper(paper: InsertQuestionPaper): Promise<QuestionPaper> {
-    const id = this.currentPaperId++;
-    const now = new Date();
-    const questionPaper: QuestionPaper = { 
-      ...paper, 
-      id, 
-      createdAt: now 
-    };
-    this.questionPapers.set(id, questionPaper);
+    const [questionPaper] = await db.insert(questionPapers).values(paper).returning();
     return questionPaper;
   }
-
+  
   async updateQuestionPaper(id: number, updates: Partial<InsertQuestionPaper>): Promise<QuestionPaper | undefined> {
-    const paper = this.questionPapers.get(id);
-    if (!paper) return undefined;
-    
-    const updatedPaper = { ...paper, ...updates };
-    this.questionPapers.set(id, updatedPaper);
-    return updatedPaper;
+    const [updated] = await db
+      .update(questionPapers)
+      .set(updates)
+      .where(eq(questionPapers.id, id))
+      .returning();
+    return updated;
   }
-
+  
   async deleteQuestionPaper(id: number): Promise<boolean> {
-    return this.questionPapers.delete(id);
+    const result = await db.delete(questionPapers).where(eq(questionPapers.id, id));
+    return result.rowCount > 0;
   }
-
+  
   // Answer submission methods
   async getAnswerSubmissions(questionPaperId?: number): Promise<AnswerSubmission[]> {
-    const submissions = Array.from(this.answerSubmissions.values());
     if (questionPaperId) {
-      return submissions.filter(submission => submission.questionPaperId === questionPaperId);
+      return await db
+        .select()
+        .from(answerSubmissions)
+        .where(eq(answerSubmissions.questionPaperId, questionPaperId))
+        .orderBy(desc(answerSubmissions.submittedAt));
     }
-    return submissions;
+    return await db
+      .select()
+      .from(answerSubmissions)
+      .orderBy(desc(answerSubmissions.submittedAt));
   }
-
+  
   async getAnswerSubmissionsByStudent(studentId: number): Promise<AnswerSubmission[]> {
-    return Array.from(this.answerSubmissions.values())
-      .filter(submission => submission.studentId === studentId);
+    return await db
+      .select()
+      .from(answerSubmissions)
+      .where(eq(answerSubmissions.studentId, studentId))
+      .orderBy(desc(answerSubmissions.submittedAt));
   }
-
+  
   async getAnswerSubmission(id: number): Promise<AnswerSubmission | undefined> {
-    return this.answerSubmissions.get(id);
+    const [submission] = await db
+      .select()
+      .from(answerSubmissions)
+      .where(eq(answerSubmissions.id, id));
+    return submission;
   }
-
+  
   async createAnswerSubmission(submission: InsertAnswerSubmission): Promise<AnswerSubmission> {
-    const id = this.currentSubmissionId++;
-    const now = new Date();
-    const answerSubmission: AnswerSubmission = { 
-      ...submission, 
-      id, 
-      status: "submitted",
-      submittedAt: now 
-    };
-    this.answerSubmissions.set(id, answerSubmission);
-    return answerSubmission;
+    const [answer] = await db
+      .insert(answerSubmissions)
+      .values(submission)
+      .returning();
+    return answer;
   }
-
+  
   async updateAnswerSubmission(id: number, updates: Partial<InsertAnswerSubmission>): Promise<AnswerSubmission | undefined> {
-    const submission = this.answerSubmissions.get(id);
-    if (!submission) return undefined;
-    
-    const updatedSubmission = { ...submission, ...updates };
-    this.answerSubmissions.set(id, updatedSubmission);
-    return updatedSubmission;
+    const [updated] = await db
+      .update(answerSubmissions)
+      .set(updates)
+      .where(eq(answerSubmissions.id, id))
+      .returning();
+    return updated;
   }
-
+  
   // Comment methods
   async getComments(submissionId: number): Promise<Comment[]> {
-    return Array.from(this.comments.values())
-      .filter(comment => comment.submissionId === submissionId);
+    return await db
+      .select()
+      .from(comments)
+      .where(eq(comments.submissionId, submissionId))
+      .orderBy(desc(comments.createdAt));
   }
-
+  
   async createComment(comment: InsertComment): Promise<Comment> {
-    const id = this.currentCommentId++;
-    const now = new Date();
-    const newComment: Comment = { 
-      ...comment, 
-      id, 
-      createdAt: now 
-    };
-    this.comments.set(id, newComment);
+    const [newComment] = await db
+      .insert(comments)
+      .values(comment)
+      .returning();
     return newComment;
   }
-
+  
   // Notification methods
   async getNotifications(userId: number): Promise<Notification[]> {
-    return Array.from(this.notifications.values())
-      .filter(notification => notification.userId === userId)
-      .sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime());
+    return await db
+      .select()
+      .from(notifications)
+      .where(eq(notifications.userId, userId))
+      .orderBy(desc(notifications.createdAt));
   }
-
+  
   async createNotification(notification: InsertNotification): Promise<Notification> {
-    const id = this.currentNotificationId++;
-    const now = new Date();
-    const newNotification: Notification = { 
-      ...notification, 
-      id, 
-      isRead: false,
-      createdAt: now 
-    };
-    this.notifications.set(id, newNotification);
+    const [newNotification] = await db
+      .insert(notifications)
+      .values(notification)
+      .returning();
     return newNotification;
   }
-
+  
   async markNotificationAsRead(id: number): Promise<boolean> {
-    const notification = this.notifications.get(id);
-    if (!notification) return false;
-    
-    notification.isRead = true;
-    this.notifications.set(id, notification);
-    return true;
+    const result = await db
+      .update(notifications)
+      .set({ isRead: true })
+      .where(eq(notifications.id, id));
+    return result.rowCount > 0;
   }
 }
 
-export const storage = new MemStorage();
+export const storage = new DatabaseStorage();
