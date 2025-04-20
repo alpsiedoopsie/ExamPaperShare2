@@ -27,24 +27,24 @@ export default function AssessorView({ user }: AssessorViewProps) {
   const [selectedSubmission, setSelectedSubmission] = useState<AnswerSubmission | null>(null);
   const [assessmentDialogOpen, setAssessmentDialogOpen] = useState(false);
   const [comment, setComment] = useState<string>('');
-  
+
   // Fetch all question papers
   const { data: papers, isLoading: papersLoading } = useQuery({
     queryKey: ['/api/question-papers'],
   });
-  
+
   // We'll need to make separate requests for each paper's submissions in a real app
   // For simplicity, let's assume this endpoint returns all submissions
   const { data: allSubmissions, isLoading: submissionsLoading } = useQuery({
     queryKey: ['/api/submissions-to-assess'],
   });
-  
+
   // For getting comments for a specific submission
   const { data: comments, isLoading: commentsLoading } = useQuery({
     queryKey: ['/api/submissions', selectedSubmission?.id, 'comments'],
     enabled: !!selectedSubmission && assessmentDialogOpen,
   });
-  
+
   // Submit comment mutation
   const submitCommentMutation = useMutation({
     mutationFn: async (data: { submissionId: number; content: string }) => {
@@ -67,61 +67,61 @@ export default function AssessorView({ user }: AssessorViewProps) {
       });
     },
   });
-  
+
   const handleSubmitComment = () => {
     if (!selectedSubmission || !comment.trim()) return;
-    
+
     submitCommentMutation.mutate({
       submissionId: selectedSubmission.id,
       content: comment,
     });
   };
-  
+
   // Get student initials for avatar
   const getStudentInitials = (studentId: number) => {
     // This would need to be fetched from the user data in a real app
     return 'ST';
   };
-  
+
   // Format date
   const formatDate = (dateString: string | Date) => {
     const date = new Date(dateString);
     return format(date, 'MMMM d, yyyy');
   };
-  
+
   // Filter and search submissions
   const filteredSubmissions = allSubmissions
     ? allSubmissions.filter((submission: AnswerSubmission & { student?: User, paper?: any }) => {
         let matchesCourse = true;
         let matchesStatus = true;
         let matchesSearch = true;
-        
+
         if (filterCourse && submission.paper) {
           matchesCourse = submission.paper.course === filterCourse;
         }
-        
+
         if (filterStatus) {
           matchesStatus = submission.status === filterStatus;
         }
-        
+
         if (searchQuery && submission.student) {
           const query = searchQuery.toLowerCase();
-          matchesSearch = 
+          matchesSearch =
             submission.student.fullName.toLowerCase().includes(query) ||
             (submission.paper && submission.paper.title.toLowerCase().includes(query));
         }
-        
+
         return matchesCourse && matchesStatus && matchesSearch;
       })
     : [];
-  
+
   return (
     <div className="space-y-6">
       {/* Submissions to Assess */}
       <Card>
         <CardContent className="p-6">
           <h2 className="text-xl font-semibold text-gray-800 mb-4">Submissions to Assess</h2>
-          
+
           {/* Filters */}
           <div className="mb-6 grid grid-cols-1 md:grid-cols-3 gap-4">
             <div>
@@ -138,7 +138,7 @@ export default function AssessorView({ user }: AssessorViewProps) {
                 </SelectContent>
               </Select>
             </div>
-            
+
             <div>
               <Label htmlFor="statusFilter">Status</Label>
               <Select value={filterStatus} onValueChange={setFilterStatus}>
@@ -153,7 +153,7 @@ export default function AssessorView({ user }: AssessorViewProps) {
                 </SelectContent>
               </Select>
             </div>
-            
+
             <div>
               <Label htmlFor="search">Search</Label>
               <div className="mt-1 relative rounded-md shadow-sm">
@@ -171,7 +171,7 @@ export default function AssessorView({ user }: AssessorViewProps) {
               </div>
             </div>
           </div>
-          
+
           {submissionsLoading || papersLoading ? (
             <div className="flex justify-center items-center h-32">
               <Loader2 className="h-8 w-8 animate-spin text-primary" />
@@ -239,8 +239,8 @@ export default function AssessorView({ user }: AssessorViewProps) {
                           </span>
                         </td>
                         <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
-                          <Button 
-                            variant="link" 
+                          <Button
+                            variant="link"
                             className="text-secondary"
                             onClick={() => {
                               setSelectedSubmission(submission);
@@ -285,8 +285,8 @@ export default function AssessorView({ user }: AssessorViewProps) {
                       </span>
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
-                      <Button 
-                        variant="link" 
+                      <Button
+                        variant="link"
                         className="text-secondary"
                         onClick={() => {
                           // Mock data for demonstration
@@ -316,14 +316,14 @@ export default function AssessorView({ user }: AssessorViewProps) {
           )}
         </CardContent>
       </Card>
-      
+
       {/* Assessment Dialog */}
       <Dialog open={assessmentDialogOpen} onOpenChange={setAssessmentDialogOpen}>
         <DialogContent className="max-w-4xl">
           <DialogHeader>
             <DialogTitle>Assessment Review</DialogTitle>
           </DialogHeader>
-          
+
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             <div>
               <h3 className="font-medium text-gray-800 mb-2">Question Paper</h3>
@@ -340,7 +340,7 @@ export default function AssessorView({ user }: AssessorViewProps) {
                 </div>
               </div>
             </div>
-            
+
             <div>
               <h3 className="font-medium text-gray-800 mb-2">Student Answer</h3>
               <div className="aspect-video bg-white border border-gray-200 rounded-md flex items-center justify-center p-6">
@@ -357,10 +357,10 @@ export default function AssessorView({ user }: AssessorViewProps) {
               </div>
             </div>
           </div>
-          
+
           <div className="border-t pt-4 mt-4">
             <h3 className="font-medium text-gray-800 mb-4">Assessment Comments</h3>
-            
+
             <div className="space-y-4 mb-6 max-h-60 overflow-y-auto">
               {commentsLoading ? (
                 <div className="flex justify-center py-4">
@@ -382,26 +382,43 @@ export default function AssessorView({ user }: AssessorViewProps) {
                 </div>
               )}
             </div>
-            
-            <div className="mt-4">
-              <Label htmlFor="comment" className="block text-sm font-medium text-gray-700 mb-2">Add Comment</Label>
-              <Textarea
-                id="comment"
-                rows={4}
-                placeholder="Enter your assessment feedback here..."
-                value={comment}
-                onChange={(e) => setComment(e.target.value)}
-                className="resize-none"
-              />
-              
-              <div className="mt-4 flex justify-end">
-                <Button 
-                  variant="outline" 
-                  className="mr-3"
-                >
+
+            <div className="mt-4 space-y-4">
+              <div>
+                <Label htmlFor="assessment-status">Assessment Status</Label>
+                <Select value={selectedSubmission?.status} onValueChange={(value) => {
+                  if (selectedSubmission) {
+                    setSelectedSubmission({ ...selectedSubmission, status: value });
+                  }
+                }}>
+                  <SelectTrigger id="assessment-status">
+                    <SelectValue placeholder="Select status" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="graded">Complete/Graded</SelectItem>
+                    <SelectItem value="reviewing">In Progress</SelectItem>
+                    <SelectItem value="submitted">Not Started</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+
+              <div>
+                <Label htmlFor="comment">Assessment Comments</Label>
+                <Textarea
+                  id="comment"
+                  rows={4}
+                  placeholder="Enter your assessment feedback here..."
+                  value={comment}
+                  onChange={(e) => setComment(e.target.value)}
+                  className="resize-none"
+                />
+              </div>
+
+              <div className="flex justify-end">
+                <Button variant="outline" className="mr-3">
                   Save Draft
                 </Button>
-                <Button 
+                <Button
                   onClick={handleSubmitComment}
                   disabled={!comment.trim() || submitCommentMutation.isPending}
                   className="bg-secondary hover:bg-secondary/90"
@@ -418,12 +435,12 @@ export default function AssessorView({ user }: AssessorViewProps) {
               </div>
             </div>
           </div>
-          
+
           <DialogFooter className="border-t pt-4 flex justify-between">
             <Button variant="outline" onClick={() => setAssessmentDialogOpen(false)}>
               Back to List
             </Button>
-            
+
             <div>
               <Button variant="outline" className="mr-3">
                 Mark as In Progress

@@ -435,8 +435,12 @@ export default function AdminView({ user }: AdminViewProps) {
             </div>
           </div>
 
-          {/* Example User List - In a real app this would use the fetched data */}
-          <div className="overflow-x-auto">
+          {usersLoading ? (
+            <div className="flex justify-center items-center h-32">
+              <Loader2 className="h-8 w-8 animate-spin text-primary" />
+            </div>
+          ) : users && users.length > 0 ? (
+            <div className="overflow-x-auto">
             <table className="min-w-full divide-y divide-gray-200">
               <thead className="bg-gray-50">
                 <tr>
@@ -458,37 +462,39 @@ export default function AdminView({ user }: AdminViewProps) {
                 </tr>
               </thead>
               <tbody className="bg-white divide-y divide-gray-200">
-                <tr>
-                  <td className="px-6 py-4 whitespace-nowrap">
-                    <div className="flex items-center">
-                      <div className="flex-shrink-0 h-10 w-10">
-                        <Avatar>
-                          <AvatarFallback>JS</AvatarFallback>
-                        </Avatar>
+                {users.map((user: any) => (
+                  <tr key={user.id}>
+                    <td className="px-6 py-4 whitespace-nowrap">
+                      <div className="flex items-center">
+                        <div className="flex-shrink-0 h-10 w-10">
+                          <Avatar>
+                            <AvatarFallback>{getInitials(user.username)}</AvatarFallback>
+                          </Avatar>
+                        </div>
+                        <div className="ml-4">
+                          <div className="text-sm font-medium text-gray-900">{user.username}</div>
+                        </div>
                       </div>
-                      <div className="ml-4">
-                        <div className="text-sm font-medium text-gray-900">John Smith</div>
-                      </div>
-                    </div>
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap">
-                    <div className="text-sm text-gray-900">john.smith@example.com</div>
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap">
-                    <Badge variant="primary" className="bg-blue-100 text-blue-800">
-                      Student
-                    </Badge>
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap">
-                    <Badge variant="success">
-                      Active
-                    </Badge>
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
-                    <Button variant="link" className="text-primary mr-3">Edit</Button>
-                    <Button variant="link" className="text-red-600">Deactivate</Button>
-                  </td>
-                </tr>
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap">
+                      <div className="text-sm text-gray-900">{user.email || 'No email provided'}</div>
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap">
+                      <Badge variant="primary" className="bg-blue-100 text-blue-800">
+                        {user.role}
+                      </Badge>
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap">
+                      <Badge variant="success">
+                        Active
+                      </Badge>
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
+                      <Button variant="link" className="text-primary mr-3">Edit</Button>
+                      <Button variant="link" className="text-red-600">Deactivate</Button>
+                    </td>
+                  </tr>
+                ))}
                 <tr>
                   <td className="px-6 py-4 whitespace-nowrap">
                     <div className="flex items-center">
