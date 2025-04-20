@@ -86,8 +86,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
           fileName: req.body.fileName,
           fileContent: req.body.fileContent,
           uploadedById: req.user!.id,
-          status: 'published',
-          createdAt: new Date()
+          status: 'published'
         });
         
         if (error) {
