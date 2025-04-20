@@ -240,7 +240,7 @@ export default function AdminView({ user }: AdminViewProps) {
                   <SelectValue placeholder="All Courses" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="">All Courses</SelectItem>
+                  <SelectItem value="all-courses">All Courses</SelectItem>
                   {papers && Array.from(new Set(papers.map((p: QuestionPaper) => p.course))).map((course: string) => (
                     <SelectItem key={course} value={course}>{course}</SelectItem>
                   ))}
@@ -255,7 +255,7 @@ export default function AdminView({ user }: AdminViewProps) {
                   <SelectValue placeholder="All Statuses" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="">All Statuses</SelectItem>
+                  <SelectItem value="all-statuses">All Statuses</SelectItem>
                   <SelectItem value="draft">Draft</SelectItem>
                   <SelectItem value="published">Published</SelectItem>
                   <SelectItem value="closed">Closed</SelectItem>
@@ -396,7 +396,7 @@ export default function AdminView({ user }: AdminViewProps) {
                   <SelectValue placeholder="All Roles" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="">All Roles</SelectItem>
+                  <SelectItem value="all-roles">All Roles</SelectItem>
                   <SelectItem value={UserRole.ADMIN}>Admin</SelectItem>
                   <SelectItem value={UserRole.STUDENT}>Student</SelectItem>
                   <SelectItem value={UserRole.ASSESSOR}>Assessor</SelectItem>
@@ -411,7 +411,7 @@ export default function AdminView({ user }: AdminViewProps) {
                   <SelectValue placeholder="All Statuses" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="">All Statuses</SelectItem>
+                  <SelectItem value="all-statuses">All Statuses</SelectItem>
                   <SelectItem value="active">Active</SelectItem>
                   <SelectItem value="inactive">Inactive</SelectItem>
                 </SelectContent>

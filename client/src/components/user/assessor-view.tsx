@@ -131,7 +131,7 @@ export default function AssessorView({ user }: AssessorViewProps) {
                   <SelectValue placeholder="All Courses" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="">All Courses</SelectItem>
+                  <SelectItem value="all-courses">All Courses</SelectItem>
                   {papers && papers.map((paper: any) => (
                     <SelectItem key={paper.course} value={paper.course}>{paper.course}</SelectItem>
                   ))}
@@ -146,7 +146,7 @@ export default function AssessorView({ user }: AssessorViewProps) {
                   <SelectValue placeholder="All Statuses" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="">All Statuses</SelectItem>
+                  <SelectItem value="all-statuses">All Statuses</SelectItem>
                   <SelectItem value="submitted">Not Reviewed</SelectItem>
                   <SelectItem value="reviewing">In Progress</SelectItem>
                   <SelectItem value="graded">Completed</SelectItem>
