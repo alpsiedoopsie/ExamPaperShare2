@@ -79,10 +79,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
     async (req: Request, res: Response) => {
       try {
         const { data, error } = validateRequest(createInsertSchema(questionPapers), {
-          ...req.body,
+          title: req.body.title,
+          course: req.body.course,
+          examDate: req.body.examDate,
+          duration: req.body.duration,
+          fileName: req.body.fileName,
+          fileContent: req.body.fileContent,
           uploadedById: req.user!.id,
-          status: 'published',
-          createdAt: new Date()
+          status: 'published'
         });
         
         if (error) {
