@@ -71,15 +71,13 @@ export const insertUserSchema = createInsertSchema(users).pick({
   fullName: true
 });
 
-export const insertQuestionPaperSchema = createInsertSchema(questionPapers).pick({
-  title: true,
-  course: true,
-  examDate: true,
-  duration: true,
-  fileName: true,
-  fileContent: true,
-  uploadedById: true,
-  status: true
+const insertQuestionPaperSchema = z.object({
+  title: z.string().min(1, "Title is required"),
+  description: z.string(),
+  examDate: z.coerce.date(),
+  duration: z.number().min(1, "Duration must be at least 1 minute"),
+  totalMarks: z.number().min(1, "Total marks must be at least 1"),
+  questions: z.array(z.string()).min(1, "At least one question is required")
 });
 
 export const insertAnswerSubmissionSchema = createInsertSchema(answerSubmissions).pick({

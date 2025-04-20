@@ -46,17 +46,17 @@ export default function AdminView({ user }: AdminViewProps) {
   const [userRoleFilter, setUserRoleFilter] = useState<string>('');
   const [userStatusFilter, setUserStatusFilter] = useState<string>('');
   const [userSearchQuery, setUserSearchQuery] = useState<string>('');
-  
+
   // Fetch question papers
   const { data: papers, isLoading: papersLoading } = useQuery({
     queryKey: ['/api/question-papers'],
   });
-  
+
   // Fetch users (in a real app this would be a separate endpoint)
   const { data: users, isLoading: usersLoading } = useQuery({
     queryKey: ['/api/users'],
   });
-  
+
   // Create question paper mutation
   const createPaperMutation = useMutation({
     mutationFn: async (data: any) => {
@@ -81,7 +81,7 @@ export default function AdminView({ user }: AdminViewProps) {
       });
     },
   });
-  
+
   // Form for question paper upload
   const form = useForm<PaperFormValues>({
     resolver: zodResolver(paperSchema),
@@ -93,11 +93,11 @@ export default function AdminView({ user }: AdminViewProps) {
       status: 'published'
     },
   });
-  
+
   const handleFileSelect = (file: File, content: string) => {
     setSelectedFile({ file, content });
   };
-  
+
   const onSubmit = (data: PaperFormValues) => {
     if (!selectedFile) {
       toast({
@@ -107,15 +107,18 @@ export default function AdminView({ user }: AdminViewProps) {
       });
       return;
     }
-    
+
+    // Convert examDate to ISO string before submitting
+    const formattedData = { ...data, examDate: data.examDate.toISOString() };
+
     createPaperMutation.mutate({
-      ...data,
+      ...formattedData,
       fileName: selectedFile.file.name,
       fileContent: selectedFile.content,
       uploadedById: user.id
     });
   };
-  
+
   // Delete paper mutation
   const deletePaperMutation = useMutation({
     mutationFn: async (id: number) => {
@@ -137,7 +140,7 @@ export default function AdminView({ user }: AdminViewProps) {
       });
     },
   });
-  
+
   // Update paper status mutation
   const updatePaperStatusMutation = useMutation({
     mutationFn: async ({ id, status }: { id: number; status: string }) => {
@@ -159,39 +162,39 @@ export default function AdminView({ user }: AdminViewProps) {
       });
     },
   });
-  
+
   // Filter papers
   const filteredPapers = papers
     ? papers.filter((paper: QuestionPaper) => {
         let matchesCourse = true;
         let matchesStatus = true;
         let matchesSearch = true;
-        
+
         if (filterCourse) {
           matchesCourse = paper.course === filterCourse;
         }
-        
+
         if (filterStatus) {
           matchesStatus = paper.status === filterStatus;
         }
-        
+
         if (searchQuery) {
           const query = searchQuery.toLowerCase();
           matchesSearch = 
             paper.title.toLowerCase().includes(query) ||
             paper.course.toLowerCase().includes(query);
         }
-        
+
         return matchesCourse && matchesStatus && matchesSearch;
       })
     : [];
-  
+
   // Format date
   const formatDate = (dateString: string | Date) => {
     const date = new Date(dateString);
     return format(date, 'MMMM d, yyyy');
   };
-  
+
   // Format duration (from minutes to hours)
   const formatDuration = (minutes: number) => {
     if (minutes < 60) return `${minutes} minutes`;
@@ -199,13 +202,13 @@ export default function AdminView({ user }: AdminViewProps) {
     const remainingMinutes = minutes % 60;
     return remainingMinutes ? `${hours} hours ${remainingMinutes} minutes` : `${hours} hours`;
   };
-  
+
   // Get submission count for a paper
   const getSubmissionCount = (paperId: number) => {
     // In a real app, this would come from the API
     return Math.floor(Math.random() * 20); // Mock for demo purposes
   };
-  
+
   // Get initials from full name
   const getInitials = (fullName: string) => {
     return fullName
@@ -214,7 +217,7 @@ export default function AdminView({ user }: AdminViewProps) {
       .join('')
       .toUpperCase();
   };
-  
+
   return (
     <div className="space-y-6">
       {/* Manage Question Papers */}
@@ -230,7 +233,7 @@ export default function AdminView({ user }: AdminViewProps) {
               Upload New Paper
             </Button>
           </div>
-          
+
           {/* Filters */}
           <div className="mb-6 grid grid-cols-1 md:grid-cols-3 gap-4">
             <div>
@@ -247,7 +250,7 @@ export default function AdminView({ user }: AdminViewProps) {
                 </SelectContent>
               </Select>
             </div>
-            
+
             <div>
               <Label htmlFor="adminStatusFilter">Status</Label>
               <Select value={filterStatus} onValueChange={setFilterStatus}>
@@ -262,7 +265,7 @@ export default function AdminView({ user }: AdminViewProps) {
                 </SelectContent>
               </Select>
             </div>
-            
+
             <div>
               <Label htmlFor="adminSearch">Search</Label>
               <div className="mt-1 relative rounded-md shadow-sm">
@@ -276,7 +279,7 @@ export default function AdminView({ user }: AdminViewProps) {
               </div>
             </div>
           </div>
-          
+
           {papersLoading ? (
             <div className="flex justify-center items-center h-32">
               <Loader2 className="h-8 w-8 animate-spin text-primary" />
@@ -372,7 +375,7 @@ export default function AdminView({ user }: AdminViewProps) {
           )}
         </CardContent>
       </Card>
-      
+
       {/* Manage Users */}
       <Card>
         <CardContent className="p-6">
@@ -386,7 +389,7 @@ export default function AdminView({ user }: AdminViewProps) {
               Add New User
             </Button>
           </div>
-          
+
           {/* Filters */}
           <div className="mb-6 grid grid-cols-1 md:grid-cols-3 gap-4">
             <div>
@@ -403,7 +406,7 @@ export default function AdminView({ user }: AdminViewProps) {
                 </SelectContent>
               </Select>
             </div>
-            
+
             <div>
               <Label htmlFor="userStatusFilter">Status</Label>
               <Select value={userStatusFilter} onValueChange={setUserStatusFilter}>
@@ -417,7 +420,7 @@ export default function AdminView({ user }: AdminViewProps) {
                 </SelectContent>
               </Select>
             </div>
-            
+
             <div>
               <Label htmlFor="userSearch">Search</Label>
               <div className="mt-1 relative rounded-md shadow-sm">
@@ -431,7 +434,7 @@ export default function AdminView({ user }: AdminViewProps) {
               </div>
             </div>
           </div>
-          
+
           {/* Example User List - In a real app this would use the fetched data */}
           <div className="overflow-x-auto">
             <table className="min-w-full divide-y divide-gray-200">
@@ -553,14 +556,14 @@ export default function AdminView({ user }: AdminViewProps) {
           </div>
         </CardContent>
       </Card>
-      
+
       {/* Upload Paper Dialog */}
       <Dialog open={uploadDialogOpen} onOpenChange={setUploadDialogOpen}>
         <DialogContent className="max-w-md">
           <DialogHeader>
             <DialogTitle>Upload New Question Paper</DialogTitle>
           </DialogHeader>
-          
+
           <Form {...form}>
             <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
               <FormField
@@ -576,7 +579,7 @@ export default function AdminView({ user }: AdminViewProps) {
                   </FormItem>
                 )}
               />
-              
+
               <FormField
                 control={form.control}
                 name="course"
@@ -590,7 +593,7 @@ export default function AdminView({ user }: AdminViewProps) {
                   </FormItem>
                 )}
               />
-              
+
               <div className="grid grid-cols-2 gap-4">
                 <FormField
                   control={form.control}
@@ -627,7 +630,7 @@ export default function AdminView({ user }: AdminViewProps) {
                     </FormItem>
                   )}
                 />
-                
+
                 <FormField
                   control={form.control}
                   name="duration"
@@ -647,7 +650,7 @@ export default function AdminView({ user }: AdminViewProps) {
                   )}
                 />
               </div>
-              
+
               <FormField
                 control={form.control}
                 name="status"
@@ -672,7 +675,7 @@ export default function AdminView({ user }: AdminViewProps) {
                   </FormItem>
                 )}
               />
-              
+
               <div className="mt-4">
                 <FileUpload
                   onFileSelect={handleFileSelect}
@@ -681,7 +684,7 @@ export default function AdminView({ user }: AdminViewProps) {
                   description="PDF up to 10MB"
                 />
               </div>
-              
+
               <DialogFooter className="mt-6">
                 <Button 
                   type="button" 
@@ -709,25 +712,25 @@ export default function AdminView({ user }: AdminViewProps) {
           </Form>
         </DialogContent>
       </Dialog>
-      
+
       {/* Add User Dialog (simplified for demo) */}
       <Dialog open={addUserDialogOpen} onOpenChange={setAddUserDialogOpen}>
         <DialogContent className="max-w-md">
           <DialogHeader>
             <DialogTitle>Add New User</DialogTitle>
           </DialogHeader>
-          
+
           <div className="space-y-4 py-4">
             <div className="space-y-2">
               <Label htmlFor="fullName">Full Name</Label>
               <Input id="fullName" placeholder="Enter full name" />
             </div>
-            
+
             <div className="space-y-2">
               <Label htmlFor="email">Email</Label>
               <Input id="email" type="email" placeholder="Enter email address" />
             </div>
-            
+
             <div className="space-y-2">
               <Label htmlFor="role">Role</Label>
               <Select defaultValue={UserRole.STUDENT}>
@@ -741,13 +744,13 @@ export default function AdminView({ user }: AdminViewProps) {
                 </SelectContent>
               </Select>
             </div>
-            
+
             <div className="space-y-2">
               <Label htmlFor="password">Password</Label>
               <Input id="password" type="password" placeholder="Enter password" />
             </div>
           </div>
-          
+
           <DialogFooter>
             <Button variant="outline" onClick={() => setAddUserDialogOpen(false)}>
               Cancel
