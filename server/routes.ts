@@ -224,11 +224,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
         }
         
         const submission = await storage.createAnswerSubmission({
-          questionPaperId: req.body.questionPaperId,
-          answerFile: req.body.answerFile,
+          questionPaperId: parseInt(req.body.questionPaperId),
+          fileName: req.body.fileName,
+          fileContent: req.body.fileContent,
           studentId: req.user!.id,
-          status: 'pending',
-          submittedAt: new Date()
+          status: 'submitted'
         });
         
         res.status(201).json(submission);
