@@ -202,61 +202,57 @@ export default function AssessorView({ user }: AssessorViewProps) {
                   </tr>
                 </thead>
                 <tbody className="bg-white divide-y divide-gray-200">
-                  {/* In a real app, this data would come from the API */}
-                  {/* Mock data for demonstration */}
-                  <tr>
-                    <td className="px-6 py-4 whitespace-nowrap">
-                      <div className="flex items-center">
-                        <div className="flex-shrink-0 h-10 w-10">
-                          <Avatar>
-                            <AvatarFallback>JS</AvatarFallback>
-                          </Avatar>
-                        </div>
-                        <div className="ml-4">
-                          <div className="text-sm font-medium text-gray-900">Jane Smith</div>
-                          <div className="text-sm text-gray-500">jane.smith@example.com</div>
-                        </div>
-                      </div>
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap">
-                      <div className="text-sm text-gray-900">Computer Science - Midterm Exam</div>
-                      <div className="text-sm text-gray-500">CS201 - Data Structures</div>
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap">
-                      <div className="text-sm text-gray-900">April 10, 2023</div>
-                      <div className="text-sm text-gray-500">09:45 AM</div>
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap">
-                      <Badge variant="destructive">Not Reviewed</Badge>
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                      <span className="inline-flex items-center">
-                        <MessageSquare className="h-4 w-4 mr-1 text-gray-400" />
-                        0 comments
-                      </span>
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
-                      <Button 
-                        variant="link" 
-                        className="text-secondary"
-                        onClick={() => {
-                          // Mock data for demonstration
-                          setSelectedSubmission({
-                            id: 1,
-                            questionPaperId: 1,
-                            studentId: 1,
-                            fileName: "jane_smith_answer.pdf",
-                            fileContent: "",
-                            status: "submitted",
-                            submittedAt: new Date(),
-                          });
-                          setAssessmentDialogOpen(true);
-                        }}
-                      >
-                        Review
-                      </Button>
-                    </td>
-                  </tr>
+                  {filteredSubmissions.map((submission: any) => {
+                    const paper = papers?.find(p => p.id === submission.questionPaperId);
+                    return (
+                      <tr key={submission.id}>
+                        <td className="px-6 py-4 whitespace-nowrap">
+                          <div className="flex items-center">
+                            <div className="flex-shrink-0 h-10 w-10">
+                              <Avatar>
+                                <AvatarFallback>{getStudentInitials(submission.studentId)}</AvatarFallback>
+                              </Avatar>
+                            </div>
+                            <div className="ml-4">
+                              <div className="text-sm font-medium text-gray-900">Student {submission.studentId}</div>
+                            </div>
+                          </div>
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap">
+                          <div className="text-sm text-gray-900">{paper?.title || 'Unknown Exam'}</div>
+                          <div className="text-sm text-gray-500">{paper?.course || 'Unknown Course'}</div>
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap">
+                          <div className="text-sm text-gray-900">{formatDate(submission.submittedAt)}</div>
+                          <div className="text-sm text-gray-500">{format(new Date(submission.submittedAt), 'hh:mm a')}</div>
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap">
+                          <Badge variant={submission.status === 'submitted' ? 'destructive' : 'outline'}>
+                            {submission.status === 'submitted' ? 'Not Reviewed' : submission.status}
+                          </Badge>
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                          <span className="inline-flex items-center">
+                            <MessageSquare className="h-4 w-4 mr-1 text-gray-400" />
+                            {/* Comments count would come from API in real implementation */}
+                            0 comments
+                          </span>
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
+                          <Button 
+                            variant="link" 
+                            className="text-secondary"
+                            onClick={() => {
+                              setSelectedSubmission(submission);
+                              setAssessmentDialogOpen(true);
+                            }}
+                          >
+                            Review
+                          </Button>
+                        </td>
+                      </tr>
+                    );
+                  })}
                   <tr>
                     <td className="px-6 py-4 whitespace-nowrap">
                       <div className="flex items-center">
