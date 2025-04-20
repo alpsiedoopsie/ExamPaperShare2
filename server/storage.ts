@@ -19,30 +19,31 @@ export interface IStorage {
   getUser(id: number): Promise<User | undefined>;
   getUserByUsername(username: string): Promise<User | undefined>;
   createUser(user: InsertUser): Promise<User>;
-  
+  getUsers(): Promise<User[]>; // Added getUsers method
+
   // Question paper operations
   getQuestionPapers(): Promise<QuestionPaper[]>;
   getQuestionPaper(id: number): Promise<QuestionPaper | undefined>;
   createQuestionPaper(paper: InsertQuestionPaper): Promise<QuestionPaper>;
   updateQuestionPaper(id: number, updates: Partial<InsertQuestionPaper>): Promise<QuestionPaper | undefined>;
   deleteQuestionPaper(id: number): Promise<boolean>;
-  
+
   // Answer submission operations
   getAnswerSubmissions(questionPaperId?: number): Promise<AnswerSubmission[]>;
   getAnswerSubmissionsByStudent(studentId: number): Promise<AnswerSubmission[]>;
   getAnswerSubmission(id: number): Promise<AnswerSubmission | undefined>;
   createAnswerSubmission(submission: InsertAnswerSubmission): Promise<AnswerSubmission>;
   updateAnswerSubmission(id: number, updates: Partial<InsertAnswerSubmission>): Promise<AnswerSubmission | undefined>;
-  
+
   // Comment operations
   getComments(submissionId: number): Promise<Comment[]>;
   createComment(comment: InsertComment): Promise<Comment>;
-  
+
   // Notification operations
   getNotifications(userId: number): Promise<Notification[]>;
   createNotification(notification: InsertNotification): Promise<Notification>;
   markNotificationAsRead(id: number): Promise<boolean>;
-  
+
   // Session store
   sessionStore: session.SessionStore;
 }
@@ -56,38 +57,42 @@ export class DatabaseStorage implements IStorage {
       createTableIfMissing: true 
     });
   }
-  
+
   // User methods
   async getUser(id: number): Promise<User | undefined> {
     const [user] = await db.select().from(users).where(eq(users.id, id));
     return user;
   }
-  
+
   async getUserByUsername(username: string): Promise<User | undefined> {
     const [user] = await db.select().from(users).where(eq(users.username, username));
     return user;
   }
-  
+
   async createUser(insertUser: InsertUser): Promise<User> {
     const [user] = await db.insert(users).values(insertUser).returning();
     return user;
   }
-  
+
+  async getUsers(): Promise<User[]> { // Added getUsers method
+    return await db.select().from(users);
+  }
+
   // Question paper methods
   async getQuestionPapers(): Promise<QuestionPaper[]> {
     return await db.select().from(questionPapers).orderBy(desc(questionPapers.createdAt));
   }
-  
+
   async getQuestionPaper(id: number): Promise<QuestionPaper | undefined> {
     const [paper] = await db.select().from(questionPapers).where(eq(questionPapers.id, id));
     return paper;
   }
-  
+
   async createQuestionPaper(paper: InsertQuestionPaper): Promise<QuestionPaper> {
     const [questionPaper] = await db.insert(questionPapers).values(paper).returning();
     return questionPaper;
   }
-  
+
   async updateQuestionPaper(id: number, updates: Partial<InsertQuestionPaper>): Promise<QuestionPaper | undefined> {
     const [updated] = await db
       .update(questionPapers)
@@ -96,12 +101,12 @@ export class DatabaseStorage implements IStorage {
       .returning();
     return updated;
   }
-  
+
   async deleteQuestionPaper(id: number): Promise<boolean> {
     const result = await db.delete(questionPapers).where(eq(questionPapers.id, id));
     return result.rowCount > 0;
   }
-  
+
   // Answer submission methods
   async getAnswerSubmissions(questionPaperId?: number): Promise<AnswerSubmission[]> {
     if (questionPaperId) {
@@ -116,7 +121,7 @@ export class DatabaseStorage implements IStorage {
       .from(answerSubmissions)
       .orderBy(desc(answerSubmissions.submittedAt));
   }
-  
+
   async getAnswerSubmissionsByStudent(studentId: number): Promise<AnswerSubmission[]> {
     return await db
       .select()
@@ -124,7 +129,7 @@ export class DatabaseStorage implements IStorage {
       .where(eq(answerSubmissions.studentId, studentId))
       .orderBy(desc(answerSubmissions.submittedAt));
   }
-  
+
   async getAnswerSubmission(id: number): Promise<AnswerSubmission | undefined> {
     const [submission] = await db
       .select()
@@ -132,7 +137,7 @@ export class DatabaseStorage implements IStorage {
       .where(eq(answerSubmissions.id, id));
     return submission;
   }
-  
+
   async createAnswerSubmission(submission: InsertAnswerSubmission): Promise<AnswerSubmission> {
     const [answer] = await db
       .insert(answerSubmissions)
@@ -140,7 +145,7 @@ export class DatabaseStorage implements IStorage {
       .returning();
     return answer;
   }
-  
+
   async updateAnswerSubmission(id: number, updates: Partial<InsertAnswerSubmission>): Promise<AnswerSubmission | undefined> {
     const [updated] = await db
       .update(answerSubmissions)
@@ -149,7 +154,7 @@ export class DatabaseStorage implements IStorage {
       .returning();
     return updated;
   }
-  
+
   // Comment methods
   async getComments(submissionId: number): Promise<Comment[]> {
     return await db
@@ -158,7 +163,7 @@ export class DatabaseStorage implements IStorage {
       .where(eq(comments.submissionId, submissionId))
       .orderBy(desc(comments.createdAt));
   }
-  
+
   async createComment(comment: InsertComment): Promise<Comment> {
     const [newComment] = await db
       .insert(comments)
@@ -166,7 +171,7 @@ export class DatabaseStorage implements IStorage {
       .returning();
     return newComment;
   }
-  
+
   // Notification methods
   async getNotifications(userId: number): Promise<Notification[]> {
     return await db
@@ -175,7 +180,7 @@ export class DatabaseStorage implements IStorage {
       .where(eq(notifications.userId, userId))
       .orderBy(desc(notifications.createdAt));
   }
-  
+
   async createNotification(notification: InsertNotification): Promise<Notification> {
     const [newNotification] = await db
       .insert(notifications)
@@ -183,7 +188,7 @@ export class DatabaseStorage implements IStorage {
       .returning();
     return newNotification;
   }
-  
+
   async markNotificationAsRead(id: number): Promise<boolean> {
     const result = await db
       .update(notifications)
