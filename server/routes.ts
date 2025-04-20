@@ -86,18 +86,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
           fileName: req.body.fileName,
           fileContent: req.body.fileContent,
           uploadedById: req.user!.id,
-          status: 'published',
-          createdAt: new Date()
+          status: 'published'
         };
         
-        // Validate the data
-        const { data, error } = validateRequest(createInsertSchema(questionPapers), paperData);
-        
-        if (error) {
-          return res.status(400).json({ message: "Invalid input", error });
-        }
-        
-        const paper = await storage.createQuestionPaper(data);
+        const paper = await storage.createQuestionPaper(paperData);
         
         res.status(201).json(paper);
       } catch (error) {
