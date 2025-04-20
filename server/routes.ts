@@ -78,7 +78,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     checkRole(UserRole.ADMIN),
     async (req: Request, res: Response) => {
       try {
-        const { data, error } = validateRequest(createInsertSchema(questionPapers), {
+        const paperData = {
           title: req.body.title,
           course: req.body.course,
           examDate: new Date(req.body.examDate),
@@ -86,8 +86,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
           fileName: req.body.fileName,
           fileContent: req.body.fileContent,
           uploadedById: req.user!.id,
-          status: 'published'
-        });
+          status: 'published',
+          createdAt: new Date()
+        };
+        
+        // Validate the data
+        const { data, error } = validateRequest(createInsertSchema(questionPapers), paperData);
         
         if (error) {
           return res.status(400).json({ message: "Invalid input", error });
