@@ -319,12 +319,12 @@ export default function AssessorView({ user }: AssessorViewProps) {
 
       {/* Assessment Dialog */}
       <Dialog open={assessmentDialogOpen} onOpenChange={setAssessmentDialogOpen}>
-        <DialogContent className="max-w-4xl">
+      <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle>Assessment Review</DialogTitle>
           </DialogHeader>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6 overflow-y-auto">
             <div>
               <h3 className="font-medium text-gray-800 mb-2">Question Paper</h3>
               <div className="aspect-video bg-white border border-gray-200 rounded-md flex items-center justify-center p-6">
