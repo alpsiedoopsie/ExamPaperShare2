@@ -1,0 +1,24 @@
+  {
+      "name": "Exam Paper Share",
+      "short_name": "ExamShare",
+      "description": "A platform to upload, assess, and review practice exam papers.",
+      "start_url": "/",
+      "display": "standalone",
+      "background_color": "#ffffff",
+      "theme_color": "#1e293b",
+      "orientation": "portrait",
+      "lang": "en",
+      "icons": [
+        {
+          "src": "/icons/icon-192x192.png",
+          "sizes": "192x192",
+          "type": "image/png"
+        },
+        {
+          "src": "/icons/icon-512x512.png",
+          "sizes": "512x512",
+          "type": "image/png"
+        }
+      ]
+    }
+    

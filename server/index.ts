@@ -2,10 +2,17 @@ import express, { type Request, Response, NextFunction } from "express";
 import { registerRoutes } from "./routes";
 import { setupVite, serveStatic, log } from "./vite";
 import dotenv from 'dotenv';
+import cors from 'cors';
 dotenv.config();
 
 
 const app = express();
+app.use(cors({
+  origin: '*',  // Replace this with your frontend URL or * for all origins
+  methods: ['GET', 'POST', 'PUT', 'DELETE'], // Allowed methods
+  allowedHeaders: ['Content-Type', 'Authorization'], // Allowed headers
+  credentials: true,  // Allow cookies to be sent
+}));
 // Increase JSON body size limit to 50MB for larger file uploads
 app.use(express.json({ limit: '50mb' }));
 // Increase URL-encoded body size limit to 50MB as well

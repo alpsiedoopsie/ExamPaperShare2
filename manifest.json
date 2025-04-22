@@ -1,0 +1,24 @@
+{
+  "manifest_version": 2,
+  "name": "Rest Express",
+  "version": "1.0.0",
+  "description": "A RESTful API project built with Express.js.",
+  "author": "Your Name",
+  "homepage_url": "https://example.com",
+  "icons": {
+    "16": "icons/icon16.png",
+    "48": "icons/icon48.png",
+    "128": "icons/icon128.png"
+  },
+  "permissions": [],
+  "background": {
+    "scripts": ["background.js"],
+    "persistent": false
+  },
+  "content_scripts": [
+    {
+      "matches": ["<all_urls>"],
+      "js": ["content.js"]
+    }
+  ]
+}
